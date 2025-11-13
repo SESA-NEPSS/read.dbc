@@ -103,19 +103,27 @@ void dbc2dbf(char** input_file, char** output_file) {
     rewind(input);
 
     /* Copy file header from input to output */
-    unsigned char buf[header];
+    unsigned char *buf = malloc(header);
+    if (buf == NULL) {
+        cleanup(input, output);
+        error("Error allocating memory for file header");
+    }
 
     ret = fread(buf, 1, header, input);
     if( ferror(input) ) {
+        free(buf);
         cleanup(input, output);
         error("Error reading input file %s: %s", input_file[0], strerror(errno));
     }
 
     ret = fwrite(buf, 1, header, output);
     if( ferror(output) ) {
+        free(buf);
         cleanup(input, output);
         error("Error writing output file %s: %s", output_file[0], strerror(errno));
     }
+
+    free(buf);
 
     /* Jump to the data (Skip CRC32) */
     if( fseek(input, header + 4, SEEK_SET) ) {
